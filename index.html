@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SIAKAD v6 - SMPN 6 KOPANG</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary-color: #2563eb; --bg-main: #f1f5f9; --font-main: 'Plus Jakarta Sans'; }
+        body { font-family: var(--font-main), sans-serif; background-color: var(--bg-main); overflow-x: hidden; }
+        .active-nav { background: #2563eb; color: white !important; box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3); }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        /* Animasi Transisi */
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <div id="auth-ui" class="min-h-screen flex items-center justify-center p-6 bg-slate-900 relative overflow-hidden">
+        <div class="absolute w-96 h-96 bg-blue-600/20 rounded-full -top-20 -left-20 blur-3xl"></div>
+        <div class="absolute w-96 h-96 bg-indigo-600/20 rounded-full -bottom-20 -right-20 blur-3xl"></div>
+
+        <div class="glass w-full max-w-md rounded-[2.5rem] shadow-2xl p-8 lg:p-10 relative z-10 border border-white/20 fade-in">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-2xl mx-auto mb-4 shadow-xl shadow-blue-500/30">
+                    <i class="fas fa-university"></i>
+                </div>
+                <h1 class="text-2xl font-black italic uppercase tracking-tighter">SIAKAD v6</h1>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">SMPN 6 KOPANG SYSTEM</p>
+            </div>
+
+            <div class="flex gap-2 mb-6 bg-slate-100 p-1.5 rounded-2xl">
+                <button onclick="switchPortal('guru')" id="tab-guru" class="flex-1 py-3 rounded-xl font-black text-[10px] uppercase transition">Portal Guru</button>
+                <button onclick="switchPortal('siswa')" id="tab-siswa" class="flex-1 py-3 rounded-xl font-black text-[10px] uppercase transition">Portal Siswa</button>
+            </div>
+
+            <div id="form-login" class="space-y-4">
+                <div id="input-container" class="space-y-4"></div>
+                <div id="login-error" class="hidden text-center text-red-500 font-bold text-[10px] uppercase bg-red-50 py-2 rounded-lg">Login Gagal! Cek kembali data Anda.</div>
+                
+                <button onclick="handleLogin()" class="w-full bg-slate-900 text-white font-black py-4 rounded-2xl hover:bg-blue-600 transition shadow-xl uppercase text-xs mt-2">Masuk ke Sistem</button>
+                
+                <div id="reg-link" class="hidden text-center text-[10px] font-bold text-slate-400 uppercase pt-2">
+                    Belum punya akun? <button onclick="toggleReg(true)" class="text-blue-600 underline">Daftar Sekarang</button>
+                </div>
+            </div>
+
+            <div id="form-register" class="space-y-4 hidden text-center">
+                <h3 class="font-black uppercase text-xs text-blue-600 italic mb-4">Registrasi Siswa Baru</h3>
+                <input type="text" id="reg-nama" placeholder="Nama Lengkap" class="w-full px-6 py-4 rounded-2xl bg-white font-bold text-sm border">
+                <input type="text" id="reg-kelas" placeholder="Kelas (Contoh: VII-A)" class="w-full px-6 py-4 rounded-2xl bg-white font-bold text-sm border">
+                <button onclick="handleRegister()" class="w-full bg-emerald-500 text-white font-black py-4 rounded-2xl uppercase text-xs shadow-lg">Buat Akun</button>
+                <button onclick="toggleReg(false)" class="text-[10px] font-black uppercase text-slate-400">Kembali ke Login</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="dashboard-ui" class="hidden min-h-screen flex flex-col lg:flex-row overflow-hidden fade-in">
+        <aside class="w-full lg:w-72 bg-white border-r flex flex-col p-6 shadow-sm z-50">
+            <div class="mb-10 flex items-center gap-3 px-2">
+                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <div>
+                    <h1 id="school-name-ui" class="font-black text-sm italic leading-none truncate w-40 uppercase">SMPN 6 KOPANG</h1>
+                    <span class="text-[8px] font-bold text-blue-500 uppercase tracking-widest">SIAKAD Digital</span>
+                </div>
+            </div>
+            <nav class="flex-1 space-y-1" id="sidebar-nav"></nav>
+            <button onclick="logout()" class="mt-auto w-full bg-red-50 text-red-500 py-4 rounded-2xl font-black text-[10px] uppercase hover:bg-red-500 hover:text-white transition">Keluar</button>
+        </aside>
+
+        <main class="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50">
+            <header class="flex justify-between items-center p-6 lg:px-10 bg-white border-b">
+                <h2 id="page-title" class="text-2xl font-black italic uppercase">Ringkasan</h2>
+                <div class="flex items-center gap-4 bg-slate-50 p-2 pr-6 rounded-full border">
+                    <div id="user-avatar-container" class="w-10 h-10 rounded-full overflow-hidden bg-slate-900 flex items-center justify-center font-black text-white text-xs"></div>
+                    <div>
+                        <p id="user-display" class="font-black text-[10px] uppercase leading-none"></p>
+                        <p id="user-role" class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mt-1"></p>
+                    </div>
+                </div>
+            </header>
+            <div id="content-area" class="flex-1 p-6 lg:p-10 overflow-y-auto"></div>
+        </main>
+    </div>
+
+    <div id="modal-crud" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[150] hidden items-center justify-center p-6">
+        <div class="bg-white w-full max-w-2xl rounded-[2.5rem] p-8 shadow-2xl border-t-8 border-blue-600 max-h-[90vh] overflow-y-auto">
+            <h3 id="modal-title" class="text-xl font-black uppercase mb-6 italic">Data</h3>
+            <div id="form-body" class="space-y-3"></div>
+            <div class="flex gap-3 mt-8">
+                <button onclick="closeModal()" class="flex-1 bg-slate-100 py-4 rounded-2xl font-black text-[10px] uppercase">Batal</button>
+                <button id="btn-save" class="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black text-[10px] uppercase shadow-lg">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPortal = 'guru';
+        let currentUser = null;
+        let db = JSON.parse(localStorage.getItem('siakad_v6_db')) || {
+            guru: [], siswa: [], mapel: [], pengumuman: [], nilai: [],
+            settings: { schoolName: "SMPN 6 KOPANG" }
+        };
+
+        const save = () => localStorage.setItem('siakad_v6_db', JSON.stringify(db));
+
+        window.onload = () => { switchPortal('guru'); };
+
+        function switchPortal(type) {
+            currentPortal = type;
+            const container = document.getElementById('input-container');
+            const isGuru = type === 'guru';
+            document.getElementById('login-error').classList.add('hidden');
+            
+            document.getElementById('tab-guru').className = isGuru ? "flex-1 py-3 rounded-xl font-black text-[10px] uppercase bg-white shadow-sm text-blue-600" : "flex-1 py-3 rounded-xl font-black text-[10px] uppercase text-slate-400";
+            document.getElementById('tab-siswa').className = !isGuru ? "flex-1 py-3 rounded-xl font-black text-[10px] uppercase bg-white shadow-sm text-blue-600" : "flex-1 py-3 rounded-xl font-black text-[10px] uppercase text-slate-400";
+            document.getElementById('reg-link').classList.toggle('hidden', isGuru);
+            
+            container.innerHTML = isGuru ? `
+                <input type="text" id="user-login" placeholder="Username" class="w-full px-6 py-4 rounded-2xl bg-white font-bold text-sm border">
+                <input type="password" id="pass-login" placeholder="Password" class="w-full px-6 py-4 rounded-2xl bg-white font-bold text-sm border">
+            ` : `
+                <input type="text" id="user-login" placeholder="Nama Lengkap" class="w-full px-6 py-4 rounded-2xl bg-white font-bold text-sm border">
+                <input type="text" id="pass-login" placeholder="Kelas (Contoh: VII-A)" class="w-full px-6 py-4 rounded-2xl bg-white font-bold text-sm border">
+            `;
+        }
+
+        function handleLogin() {
+            const u = document.getElementById('user-login').value.trim().toLowerCase();
+            const p = document.getElementById('pass-login').value.trim();
+            const errorDiv = document.getElementById('login-error');
+
+            if(currentPortal === 'guru') {
+                if(u === 'admin' && p === '123') enterDashboard({nama: 'Ardiansyah', role: 'guru'});
+                else errorDiv.classList.remove('hidden');
+            } else {
+                const s = db.siswa.find(x => x.nama.toLowerCase() === u && x.kelas.toLowerCase() === p.toLowerCase());
+                if(s) enterDashboard({...s, role: 'siswa'});
+                else errorDiv.classList.remove('hidden');
+            }
+        }
+
+        function enterDashboard(user) {
+            currentUser = user;
+            document.getElementById('auth-ui').classList.add('hidden');
+            document.getElementById('dashboard-ui').classList.remove('hidden');
+            document.getElementById('user-display').innerText = user.nama;
+            document.getElementById('user-role').innerText = user.role === 'guru' ? 'ADMINISTRATOR' : `SISWA KELAS ${user.kelas}`;
+            document.getElementById('school-name-ui').innerText = db.settings.schoolName;
+            
+            updateAvatar();
+            renderSidebar();
+            renderTab('Dashboard');
+        }
+
+        function renderSidebar() {
+            const nav = document.getElementById('sidebar-nav');
+            const menu = currentUser.role === 'guru' 
+                ? ['Dashboard', 'Data Guru', 'Data Siswa', 'Mata Pelajaran', 'Input Nilai', 'Pengumuman', 'Pengaturan']
+                : ['Dashboard', 'Hasil Studi', 'Pengumuman', 'Pengaturan'];
+            
+            nav.innerHTML = menu.map(m => `
+                <button onclick="renderTab('${m}')" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-[10px] uppercase tracking-wider mb-1 hover:bg-blue-50">
+                    <i class="fas ${getIcon(m)} w-5"></i> ${m}
+                </button>
+            `).join('');
+        }
+
+        function renderTab(tab) {
+            const area = document.getElementById('content-area');
+            document.getElementById('page-title').innerText = tab;
+            document.querySelectorAll('.sidebar-item').forEach(el => el.classList.toggle('active-nav', el.innerText.includes(tab.toUpperCase())));
+
+            if(tab === 'Dashboard') renderDashboard(area);
+            else if(tab === 'Hasil Studi') renderKHS(area);
+            else if(tab === 'Pengaturan') renderSettings(area);
+            else renderTablePage(tab, area);
+        }
+
+        function renderDashboard(area) {
+            area.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white p-8 rounded-[2rem] border-b-4 border-blue-600 shadow-sm">
+                        <p class="text-[10px] font-black text-slate-400 uppercase">Total Siswa</p>
+                        <h3 class="text-4xl font-black mt-2 text-slate-900">${db.siswa.length}</h3>
+                    </div>
+                    <div class="bg-white p-8 rounded-[2rem] border-b-4 border-indigo-600 shadow-sm">
+                        <p class="text-[10px] font-black text-slate-400 uppercase">Total Guru</p>
+                        <h3 class="text-4xl font-black mt-2 text-slate-900">${db.guru.length}</h3>
+                    </div>
+                    <div class="bg-white p-8 rounded-[2rem] border-b-4 border-emerald-600 shadow-sm">
+                        <p class="text-[10px] font-black text-slate-400 uppercase">Pengumuman</p>
+                        <h3 class="text-4xl font-black mt-2 text-slate-900">${db.pengumuman.length}</h3>
+                    </div>
+                </div>
+                <div class="bg-blue-600 rounded-[2.5rem] p-8 text-white shadow-xl flex flex-col md:flex-row items-center gap-8">
+                    <div class="w-32 h-32 rounded-3xl bg-white/20 border-4 border-white/30 overflow-hidden">
+                        <img src="${currentUser.foto || 'https://via.placeholder.com/150'}" class="w-full h-full object-cover">
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-black uppercase italic">Selamat Datang, ${currentUser.nama}!</h2>
+                        <p class="opacity-80 text-sm font-bold mt-1">Anda masuk sebagai ${currentUser.role === 'guru' ? 'Administrator Sistem' : 'Siswa Aktif'}.</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderTablePage(tab, area) {
+            const key = getDBKey(tab);
+            area.innerHTML = `
+                <div class="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border">
+                    <div class="flex justify-between items-center mb-8">
+                        <h4 class="font-black italic uppercase text-xs">Kelola ${tab}</h4>
+                        ${currentUser.role === 'guru' ? `<button onclick="openModal('${tab}')" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase shadow-lg">+ Tambah</button>` : ''}
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="text-[10px] font-black uppercase text-slate-400 border-b">
+                                <tr id="th-row"></tr>
+                            </thead>
+                            <tbody id="tb-body" class="text-xs font-bold divide-y"></tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            loadData(tab);
+        }
+
+        function loadData(tab) {
+            const key = getDBKey(tab);
+            const config = {
+                'guru': { f: ['n','j'], l: ['Nama','Jabatan'] },
+                'siswa': { f: ['nama','kelas','alamat'], l: ['Nama','Kelas','Alamat'] },
+                'mapel': { f: ['n','g','k'], l: ['Mapel','Guru','Kelas'] },
+                'nilai': { f: ['sn','m','v'], l: ['Siswa','Mapel','Nilai'] },
+                'pengumuman': { f: ['t','i'], l: ['Tgl','Isi'] }
+            }[key];
+
+            document.getElementById('th-row').innerHTML = config.l.map(l => `<th class="pb-4">${l}</th>`).join('') + (currentUser.role === 'guru' ? '<th>Aksi</th>' : '');
+            document.getElementById('tb-body').innerHTML = db[key].map((d, i) => `
+                <tr class="hover:bg-slate-50 transition">
+                    ${config.f.map(f => `<td class="py-4">${d[f]}</td>`).join('')}
+                    ${currentUser.role === 'guru' ? `<td class="py-4">
+                        <button onclick="openModal('${tab}', ${i})" class="text-blue-500 mr-2"><i class="fas fa-edit"></i></button>
+                        <button onclick="delData('${key}', ${i}, '${tab}')" class="text-red-400"><i class="fas fa-trash"></i></button>
+                    </td>` : ''}
+                </tr>
+            `).join('');
+        }
+
+        function openModal(tab, index = -1) {
+            const body = document.getElementById('form-body');
+            const data = index > -1 ? db[getDBKey(tab)][index] : {};
+            document.getElementById('modal-title').innerText = (index > -1 ? 'Edit ' : 'Tambah ') + tab;
+            let html = "";
+
+            if(tab === 'Data Guru') html = `<input id="f1" value="${data.n||''}" placeholder="Nama" class="w-full p-4 bg-slate-50 rounded-2xl border"><input id="f2" value="${data.j||''}" placeholder="Jabatan" class="w-full p-4 bg-slate-50 rounded-2xl border">`;
+            if(tab === 'Data Siswa') html = `<input id="f1" value="${data.nama||''}" placeholder="Nama" class="w-full p-4 bg-slate-50 rounded-2xl border"><input id="f2" value="${data.kelas||''}" placeholder="Kelas" class="w-full p-4 bg-slate-50 rounded-2xl border"><input id="f3" value="${data.alamat||''}" placeholder="Alamat" class="w-full p-4 bg-slate-50 rounded-2xl border">`;
+            if(tab === 'Mata Pelajaran') html = `<input id="f1" value="${data.n||''}" placeholder="Mapel" class="w-full p-4 bg-slate-50 rounded-2xl border"><input id="f2" value="${data.g||''}" placeholder="Guru" class="w-full p-4 bg-slate-50 rounded-2xl border"><input id="f3" value="${data.k||''}" placeholder="Kelas" class="w-full p-4 bg-slate-50 rounded-2xl border">`;
+            if(tab === 'Input Nilai') {
+                html = `<select id="f1" class="w-full p-4 bg-slate-50 rounded-2xl border">${db.siswa.map(s => `<option value="${s.nama}" ${data.sn===s.nama?'selected':''}>${s.nama}</option>`).join('')}</select>
+                        <select id="f2" class="w-full p-4 bg-slate-50 rounded-2xl border">${db.mapel.map(m => `<option value="${m.n}" ${data.m===m.n?'selected':''}>${m.n}</option>`).join('')}</select>
+                        <input id="f3" type="number" value="${data.v||''}" placeholder="Nilai" class="w-full p-4 bg-slate-50 rounded-2xl border">`;
+            }
+            if(tab === 'Pengumuman') html = `<input id="f1" type="date" value="${data.t||''}" class="w-full p-4 bg-slate-50 rounded-2xl border"><textarea id="f2" class="w-full p-4 bg-slate-50 rounded-2xl border">${data.i||''}</textarea>`;
+
+            body.innerHTML = html;
+            document.getElementById('btn-save').onclick = () => saveProcess(tab, index);
+            document.getElementById('modal-crud').style.display = 'flex';
+        }
+
+        function saveProcess(tab, index) {
+            const key = getDBKey(tab);
+            const v1 = document.getElementById('f1').value;
+            const v2 = document.getElementById('f2').value;
+            const v3 = document.getElementById('f3')?.value;
+            let obj = {};
+
+            if(tab === 'Data Guru') obj = {n:v1, j:v2};
+            if(tab === 'Data Siswa') obj = {nama:v1, kelas:v2, alamat:v3, foto: null};
+            if(tab === 'Mata Pelajaran') obj = {n:v1, g:v2, k:v3};
+            if(tab === 'Input Nilai') obj = {sn:v1, m:v2, v:v3};
+            if(tab === 'Pengumuman') obj = {t:v1, i:v2};
+
+            if(index > -1) db[key][index] = obj; else db[key].push(obj);
+            save(); closeModal(); renderTab(tab);
+        }
+
+        function renderKHS(area) {
+            const scores = db.nilai.filter(n => n.sn === currentUser.nama);
+            area.innerHTML = `
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-xl max-w-2xl mx-auto border fade-in">
+                    <div class="flex justify-between items-center mb-8 border-b pb-6">
+                        <h3 class="text-xl font-black italic uppercase">Kartu Hasil Studi</h3>
+                        <button onclick="downloadKHS()" class="bg-emerald-500 text-white px-5 py-2 rounded-xl font-black text-[10px] uppercase">Cetak PDF</button>
+                    </div>
+                    <table class="w-full text-left">
+                        <thead class="text-[10px] font-black uppercase text-slate-400 border-b"><tr><th class="pb-4">Mapel</th><th class="pb-4">Nilai</th><th class="pb-4">Status</th></tr></thead>
+                        <tbody class="divide-y text-xs font-bold">
+                            ${scores.map(s => `<tr><td class="py-4 uppercase">${s.m}</td><td class="py-4 text-lg font-black">${s.v}</td><td class="py-4"><span class="px-3 py-1 rounded-full ${s.v>=75?'bg-green-100 text-green-600':'bg-red-100 text-red-600'} text-[8px]">${s.v>=75?'LULUS':'REMIDI'}</span></td></tr>`).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function downloadKHS() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFontSize(18); doc.text("KARTU HASIL STUDI (KHS)", 105, 20, {align:"center"});
+            doc.setFontSize(10); doc.text(`Nama: ${currentUser.nama}`, 20, 35);
+            doc.text(`Kelas: ${currentUser.kelas}`, 20, 40);
+            doc.autoTable({ head: [['Mata Pelajaran', 'Nilai', 'Status']], body: db.nilai.filter(n => n.sn === currentUser.nama).map(s => [s.m, s.v, s.v >= 75 ? 'LULUS' : 'REMIDI']), startY: 50 });
+            doc.save(`KHS_${currentUser.nama}.pdf`);
+        }
+
+        function getDBKey(t) { return {'Data Guru':'guru','Data Siswa':'siswa','Mata Pelajaran':'mapel','Input Nilai':'nilai','Pengumuman':'pengumuman'}[t]; }
+        function getIcon(m) { return {'Dashboard':'fa-home','Data Guru':'fa-user-tie','Data Siswa':'fa-users','Mata Pelajaran':'fa-book','Input Nilai':'fa-pen','Pengumuman':'fa-bullhorn','Pengaturan':'fa-cog','Hasil Studi':'fa-file-alt'}[m]; }
+        function closeModal() { document.getElementById('modal-crud').style.display = 'none'; }
+        function logout() { location.reload(); }
+        function updateAvatar() { document.getElementById('user-avatar-container').innerHTML = currentUser.foto ? `<img src="${currentUser.foto}" class="w-full h-full object-cover">` : `<span class="text-white">${currentUser.nama.charAt(0)}</span>`; }
+        function delData(k, i, t) { if(confirm('Hapus?')) { db[k].splice(i,1); save(); renderTab(t); } }
+
+        function renderSettings(area) {
+            area.innerHTML = `<div class="bg-white p-8 rounded-[2.5rem] shadow-sm border max-w-md">
+                <h4 class="font-black italic uppercase text-xs mb-6 border-b pb-4">Pengaturan Sistem</h4>
+                <input id="set-sch" value="${db.settings.schoolName}" placeholder="Nama Sekolah" class="w-full p-4 bg-slate-50 rounded-2xl border font-bold mb-4">
+                <button onclick="updateSystem()" class="w-full bg-slate-900 text-white p-4 rounded-2xl font-black uppercase text-[10px]">Simpan Perubahan</button>
+            </div>`;
+        }
+        function updateSystem() { db.settings.schoolName = document.getElementById('set-sch').value; save(); alert('Berhasil!'); enterDashboard(currentUser); }
+        function toggleReg(s) { document.getElementById('form-login').classList.toggle('hidden', s); document.getElementById('form-register').classList.toggle('hidden', !s); }
+        function handleRegister() { 
+            const n = document.getElementById('reg-nama').value; 
+            const k = document.getElementById('reg-kelas').value;
+            if(!n || !k) return alert('Isi lengkap!');
+            db.siswa.push({nama: n, kelas: k, alamat: '-', foto: null});
+            save(); alert('Berhasil! Silahkan Login.'); toggleReg(false);
+        }
+    </script>
+</body>
+</html>
